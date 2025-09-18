@@ -991,12 +991,23 @@
                     <div class="wallet-name">Gate Wallet</div>
                 </div>
             </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button onclick="connectGenericWallet()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; cursor: pointer; transition: all 0.3s;">
+                    🔗 Try Generic Connection
+                </button>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                    If specific wallet doesn't work
+                </div>
+            </div>
             <button class="close-wallets" onclick="hideWalletSelector()">Cancel</button>
         </div>
 
         <div class="network-info">
             <div style="margin-bottom: 8px;">Connected to GateChain EVM (Chain ID: 86)</div>
-            <div>Contract: <span id="contractAddress" style="font-family: monospace; font-size: 0.9em;">0xc53159571f3ec44029537ebd7d1afad29dba7b67</span></div>
+            <div style="margin-bottom: 8px;">Contract: <span id="contractAddress" style="font-family: monospace; font-size: 0.9em;">0xc53159571f3ec44029537ebd7d1afad29dba7b67</span></div>
+            <button onclick="switchToGateChain()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12px; cursor: pointer; margin-top: 8px; transition: all 0.3s;">
+                🔄 Switch to GateChain
+            </button>
         </div>
 
         <div id="errorMessage" class="error" style="display: none;"></div>
@@ -1033,10 +1044,47 @@
         ];
 
         const WALLETS = {
-            metamask: { name: 'MetaMask', provider: () => window.ethereum && window.ethereum.isMetaMask ? window.ethereum : null },
-            okx: { name: 'OKX Wallet', provider: () => window.okxwallet || (window.ethereum && window.ethereum.isOkxWallet ? window.ethereum : null) },
-            tokenpocket: { name: 'TokenPocket', provider: () => window.tokenpocket || (window.ethereum && window.ethereum.isTokenPocket ? window.ethereum : null) },
-            gate: { name: 'Gate Wallet', provider: () => window.gatewallet || (window.ethereum && window.ethereum.isGateWallet ? window.ethereum : null) }
+            metamask: { 
+                name: 'MetaMask', 
+                provider: () => {
+                    if (window.ethereum && window.ethereum.isMetaMask) return window.ethereum;
+                    if (window.ethereum && window.ethereum.providers) {
+                        return window.ethereum.providers.find(p => p.isMetaMask);
+                    }
+                    return null;
+                }
+            },
+            okx: { 
+                name: 'OKX Wallet', 
+                provider: () => {
+                    if (window.okxwallet) return window.okxwallet;
+                    if (window.ethereum && window.ethereum.isOkxWallet) return window.ethereum;
+                    if (window.ethereum && window.ethereum.providers) {
+                        return window.ethereum.providers.find(p => p.isOkxWallet);
+                    }
+                    return null;
+                }
+            },
+            tokenpocket: { 
+                name: 'TokenPocket', 
+                provider: () => {
+                    // TokenPocket 直接使用 inject 方式
+                    if (window.ethereum) {
+                        return window.ethereum;
+                    }
+                    return null;
+                }
+            },
+            gate: { 
+                name: 'Gate Wallet', 
+                provider: () => {
+                    // Gate Wallet 直接使用 inject 方式
+                    if (window.ethereum) {
+                        return window.ethereum;
+                    }
+                    return null;
+                }
+            }
         };
 
         // Pool monitoring function
@@ -1112,6 +1160,26 @@
             document.getElementById('connectBtn').style.display = 'block';
         }
 
+        // 钱包检测调试函数
+        function debugWalletDetection() {
+            console.log('=== Wallet Detection Debug ===');
+            console.log('window.ethereum:', window.ethereum);
+            console.log('window.tokenpocket:', window.tokenpocket);
+            console.log('window.gatewallet:', window.gatewallet);
+            console.log('window.okxwallet:', window.okxwallet);
+            console.log('window.tronWeb:', window.tronWeb);
+            
+            if (window.ethereum) {
+                console.log('ethereum.isMetaMask:', window.ethereum.isMetaMask);
+                console.log('ethereum.isTokenPocket:', window.ethereum.isTokenPocket);
+                console.log('ethereum.isGateWallet:', window.ethereum.isGateWallet);
+                console.log('ethereum.isOkxWallet:', window.ethereum.isOkxWallet);
+                console.log('ethereum.isTronLink:', window.ethereum.isTronLink);
+                console.log('ethereum.providers:', window.ethereum.providers);
+            }
+            console.log('==============================');
+        }
+
         async function connectSpecificWallet(walletType) {
             const wallet = WALLETS[walletType];
             if (!wallet) {
@@ -1119,9 +1187,23 @@
                 return;
             }
 
+            // 调试钱包检测
+            debugWalletDetection();
+
             const walletProvider = wallet.provider();
+            console.log(`${wallet.name} provider:`, walletProvider);
+            
             if (!walletProvider) {
-                showError(`${wallet.name} is not installed.`);
+                // 提供更详细的错误信息
+                let errorMsg = `${wallet.name} is not detected. `;
+                if (walletType === 'tokenpocket') {
+                    errorMsg += 'Please make sure TokenPocket is installed and unlocked. Try refreshing the page.';
+                } else if (walletType === 'gate') {
+                    errorMsg += 'Please make sure Gate Wallet is installed and unlocked. Try refreshing the page.';
+                } else {
+                    errorMsg += 'Please install and unlock the wallet first.';
+                }
+                showError(errorMsg);
                 return;
             }
 
@@ -1129,35 +1211,74 @@
                 showLoading('connectBtn', `Connecting to ${wallet.name}...`);
                 hideWalletSelector();
                 
-                await walletProvider.request({ method: 'eth_requestAccounts' });
+                // 请求连接账户
+                const accounts = await walletProvider.request({ method: 'eth_requestAccounts' });
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts found');
+                }
                 
-                try {
-                    await walletProvider.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: GATECHAIN_CONFIG.chainId }]
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
+                // 检查当前网络
+                const currentChainId = await walletProvider.request({ method: 'eth_chainId' });
+                console.log('Current chain ID:', currentChainId);
+                
+                // 如果不在GateChain网络，尝试切换
+                if (currentChainId !== GATECHAIN_CONFIG.chainId) {
+                    try {
                         await walletProvider.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [GATECHAIN_CONFIG]
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: GATECHAIN_CONFIG.chainId }]
                         });
+                        console.log('Successfully switched to GateChain');
+                    } catch (switchError) {
+                        console.log('Switch failed, trying to add network:', switchError);
+                        if (switchError.code === 4902) {
+                            // 网络不存在，添加网络
+                            await walletProvider.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [GATECHAIN_CONFIG]
+                            });
+                            console.log('Successfully added GateChain network');
+                        } else if (switchError.code === 4001) {
+                            // 用户拒绝切换网络
+                            throw new Error('Please switch to GateChain EVM network to continue');
+                        } else {
+                            throw new Error(`Failed to switch network: ${switchError.message}`);
+                        }
                     }
                 }
 
+                // 创建provider和signer
                 provider = new ethers.BrowserProvider(walletProvider);
                 signer = await provider.getSigner();
                 currentWallet = walletType;
+                
+                // 验证网络连接
+                const network = await provider.getNetwork();
+                if (network.chainId.toString() !== '86') {
+                    throw new Error('Please switch to GateChain EVM network (Chain ID: 86)');
+                }
                 
                 document.getElementById('connectBtn').style.display = 'none';
                 document.getElementById('swapBtn').style.display = 'block';
                 
                 isConnected = true;
                 await updateBalances();
-                showSuccess(`${wallet.name} connected successfully!`);
+                showSuccess(`${wallet.name} connected successfully! Network: GateChain EVM`);
                 
             } catch (error) {
-                showError(`Failed to connect: ${error.message}`);
+                console.error('Connection error:', error);
+                let errorMessage = error.message;
+                
+                // 特殊处理TokenPocket错误
+                if (walletType === 'tokenpocket' && error.message.includes('User rejected')) {
+                    errorMessage = 'TokenPocket connection was rejected. Please try again.';
+                } else if (error.message.includes('network')) {
+                    errorMessage = 'Please switch to GateChain EVM network in your wallet.';
+                } else if (error.message.includes('not installed')) {
+                    errorMessage = `${wallet.name} is not installed. Please install it first.`;
+                }
+                
+                showError(`Failed to connect: ${errorMessage}`);
                 showWalletSelector();
             } finally {
                 hideLoading('connectBtn', 'Connect Wallet');
@@ -1377,11 +1498,139 @@
             showSuccess('Wallet disconnected');
         }
 
+        // 通用钱包连接方法（备用方案）
+        async function connectGenericWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    showLoading('connectBtn', 'Connecting to wallet...');
+                    hideWalletSelector();
+                    
+                    // 请求连接账户
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (!accounts || accounts.length === 0) {
+                        throw new Error('No accounts found');
+                    }
+                    
+                    // 检查当前网络
+                    const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    console.log('Current chain ID:', currentChainId);
+                    
+                    // 如果不在GateChain网络，尝试切换
+                    if (currentChainId !== GATECHAIN_CONFIG.chainId) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: GATECHAIN_CONFIG.chainId }]
+                            });
+                            console.log('Successfully switched to GateChain');
+                        } catch (switchError) {
+                            console.log('Switch failed, trying to add network:', switchError);
+                            if (switchError.code === 4902) {
+                                // 网络不存在，添加网络
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [GATECHAIN_CONFIG]
+                                });
+                                console.log('Successfully added GateChain network');
+                            } else if (switchError.code === 4001) {
+                                // 用户拒绝切换网络
+                                throw new Error('Please switch to GateChain EVM network to continue');
+                            } else {
+                                throw new Error(`Failed to switch network: ${switchError.message}`);
+                            }
+                        }
+                    }
+
+                    // 创建provider和signer
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    signer = await provider.getSigner();
+                    currentWallet = 'generic';
+                    
+                    // 验证网络连接
+                    const network = await provider.getNetwork();
+                    if (network.chainId.toString() !== '86') {
+                        throw new Error('Please switch to GateChain EVM network (Chain ID: 86)');
+                    }
+                    
+                    document.getElementById('connectBtn').style.display = 'none';
+                    document.getElementById('swapBtn').style.display = 'block';
+                    
+                    isConnected = true;
+                    await updateBalances();
+                    showSuccess('Wallet connected successfully! Network: GateChain EVM');
+                    
+                } catch (error) {
+                    console.error('Generic connection error:', error);
+                    showError(`Failed to connect: ${error.message}`);
+                    showWalletSelector();
+                } finally {
+                    hideLoading('connectBtn', 'Connect Wallet');
+                }
+            } else {
+                showError('No wallet detected. Please install a Web3 wallet first.');
+            }
+        }
+
+        // 检查网络状态
+        async function checkNetworkStatus() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    const isCorrectNetwork = chainId === GATECHAIN_CONFIG.chainId;
+                    
+                    if (!isCorrectNetwork) {
+                        showError('Please switch to GateChain EVM network (Chain ID: 86) to use this dApp');
+                    }
+                    
+                    return isCorrectNetwork;
+                } catch (error) {
+                    console.log('Network check failed:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // 添加网络切换按钮功能
+        async function switchToGateChain() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: GATECHAIN_CONFIG.chainId }]
+                    });
+                    showSuccess('Successfully switched to GateChain EVM!');
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        // 网络不存在，添加网络
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [GATECHAIN_CONFIG]
+                            });
+                            showSuccess('Successfully added GateChain EVM network!');
+                        } catch (addError) {
+                            showError('Failed to add GateChain network: ' + addError.message);
+                        }
+                    } else if (switchError.code === 4001) {
+                        showError('Network switch was rejected by user');
+                    } else {
+                        showError('Failed to switch network: ' + switchError.message);
+                    }
+                }
+            } else {
+                showError('No wallet detected. Please install a Web3 wallet first.');
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             updateSwapIndicator();
             updatePoolData();
             setInterval(updatePoolData, 30000);
+            
+            // 检查网络状态
+            setTimeout(checkNetworkStatus, 1000);
             
             if (typeof window.ethereum !== 'undefined') {
                 window.ethereum.on('accountsChanged', function(accounts) {
@@ -1393,8 +1642,19 @@
                 });
 
                 window.ethereum.on('chainChanged', function(chainId) {
-                    if (chainId !== GATECHAIN_CONFIG.chainId && isConnected) {
-                        showError('Please switch back to GateChain EVM network');
+                    console.log('Chain changed to:', chainId);
+                    if (chainId !== GATECHAIN_CONFIG.chainId) {
+                        if (isConnected) {
+                            showError('Please switch back to GateChain EVM network (Chain ID: 86)');
+                        } else {
+                            showError('Please switch to GateChain EVM network (Chain ID: 86) to use this dApp');
+                        }
+                    } else {
+                        // 网络正确，清除错误信息
+                        const errorDiv = document.getElementById('errorMessage');
+                        if (errorDiv && errorDiv.textContent.includes('network')) {
+                            errorDiv.style.display = 'none';
+                        }
                     }
                 });
             }

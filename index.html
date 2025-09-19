@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GateDog314 Swap</title>
+    <title>GateDog Swap</title>
     <link rel="icon" type="image/png" href="./dog.png">
     <link rel="shortcut icon" type="image/png" href="./dog.png">
     <link rel="apple-touch-icon" href="./dog.png">
@@ -879,7 +879,7 @@
         <h1 class="title">
             <img src="./dog.png" class="dog-icon" alt="Dog" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
             <div class="dog-icon-fallback" style="display:none;">🐕</div>
-            GateDog314 Swap
+            GateDog Swap
         </h1>
     </div>
 
@@ -905,7 +905,7 @@
 
             <div class="swap-button-container">
                 <div class="swap-direction-indicator buy-indicator" id="swapIndicator">
-                    <span id="swapDirectionText">🟢 Buy GDOG314 with GT</span>
+                    <span id="swapDirectionText">🟢 Buy GDOG with GT</span>
                 </div>
                 <button class="swap-icon" onclick="swapTokens()">⇅</button>
             </div>
@@ -914,9 +914,9 @@
                 <div class="token-header">
                     <div class="token-select" id="toTokenSelect">
                         <div class="token-icon gdog-icon">
-                            <img src="./dog.png" alt="GDOG314" onerror="this.style.display='none'; this.parentElement.innerHTML='GDOG';" />
+                            <img src="./dog.png" alt="GDOG" onerror="this.style.display='none'; this.parentElement.innerHTML='GDOG';" />
                         </div>
-                        <span>GDOG314</span>
+                        <span>GDOG</span>
                     </div>
                     <div class="balance">Balance: <span class="balance-value" id="toBalance">0.00</span></div>
                 </div>
@@ -930,7 +930,7 @@
                 <span id="poolGtBalance">Loading...</span>
             </div>
             <div class="pool-row">
-                <span>Pool GDOG314 Balance:</span>
+                <span>Pool GDOG Balance:</span>
                 <span id="poolGdogBalance">Loading...</span>
             </div>
             <div class="pool-row">
@@ -938,7 +938,7 @@
                 <span id="currentGtPrice">$16.93</span>
             </div>
             <div class="pool-row">
-                <span>GDOG314 Price:</span>
+                <span>GDOG Price:</span>
                 <span id="currentGdogPrice">$0.000</span>
             </div>
         </div>
@@ -954,7 +954,7 @@
             </div>
             <div class="price-row">
                 <span>You will receive:</span>
-                <span id="receiveAmount">0 GDOG314</span>
+                <span id="receiveAmount">0 GDOG</span>
             </div>
         </div>
 
@@ -1028,7 +1028,7 @@
         // Global variables
         let provider, signer, contract;
         let isConnected = false;
-        let swapDirection = 'buy'; // 'buy' means buying GDOG314 with GT, 'sell' means selling GDOG314 for GT
+        let swapDirection = 'buy'; // 'buy' means buying GDOG with GT, 'sell' means selling GDOG for GT
         let currentWallet = null;
         let poolData = { gtBalance: 0, gdogBalance: 0, gdogPrice: 0 };
         let userBalances = { gt: 0, gdog: 0 };
@@ -1107,7 +1107,7 @@
                 }
                 
                 document.getElementById('poolGtBalance').textContent = gtBalance.toFixed(4) + ' GT';
-                document.getElementById('poolGdogBalance').textContent = gdogBalance.toFixed(2) + ' GDOG314';
+                document.getElementById('poolGdogBalance').textContent = gdogBalance.toFixed(2) + ' GDOG';
                 document.getElementById('currentGdogPrice').textContent = '$' + poolData.gdogPrice.toFixed(6);
             } catch (error) {
                 console.error('Error updating pool data:', error);
@@ -1123,10 +1123,10 @@
             
             if (swapDirection === 'buy') {
                 indicator.className = 'swap-direction-indicator buy-indicator';
-                text.textContent = '🟢 Buy GDOG314 with GT';
+                text.textContent = '🟢 Buy GDOG with GT';
             } else {
                 indicator.className = 'swap-direction-indicator sell-indicator';
-                text.textContent = '🟡 Sell GDOG314 for GT';
+                text.textContent = '🟡 Sell GDOG for GT';
             }
         }
 
@@ -1361,11 +1361,11 @@
                 }
                 
                 document.getElementById('tokenPrice').textContent = `${expectedPrice.toFixed(6)}`;
-                document.getElementById('receiveAmount').textContent = `${outputAmount.toFixed(6)} ${swapDirection === 'buy' ? 'GDOG314' : 'GT'}`;
+                document.getElementById('receiveAmount').textContent = `${outputAmount.toFixed(6)} ${swapDirection === 'buy' ? 'GDOG' : 'GT'}`;
                 document.getElementById('priceInfo').style.display = 'block';
                 
                 document.getElementById('swapBtn').disabled = false;
-                document.getElementById('swapBtn').textContent = swapDirection === 'buy' ? 'Buy GDOG314' : 'Sell GDOG314';
+                document.getElementById('swapBtn').textContent = swapDirection === 'buy' ? 'Buy GDOG' : 'Sell GDOG';
                 
             } catch (error) {
                 console.error('Error calculating output:', error);
@@ -1390,9 +1390,9 @@
             
             if (swapDirection === 'buy') {
                 fromTokenSelect.innerHTML = '<div class="token-icon gt-icon"><img src="./gt-logo.png" alt="GT" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GT\';" /></div><span>GT</span>';
-                toTokenSelect.innerHTML = '<div class="token-icon gdog-icon"><img src="./dog.png" alt="GDOG314" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GDOG\';" /></div><span>GDOG314</span>';
+                toTokenSelect.innerHTML = '<div class="token-icon gdog-icon"><img src="./dog.png" alt="GDOG" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GDOG\';" /></div><span>GDOG</span>';
             } else {
-                fromTokenSelect.innerHTML = '<div class="token-icon gdog-icon"><img src="./dog.png" alt="GDOG314" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GDOG\';" /></div><span>GDOG314</span>';
+                fromTokenSelect.innerHTML = '<div class="token-icon gdog-icon"><img src="./dog.png" alt="GDOG" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GDOG\';" /></div><span>GDOG</span>';
                 toTokenSelect.innerHTML = '<div class="token-icon gt-icon"><img src="./gt-logo.png" alt="GT" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'GT\';" /></div><span>GT</span>';
             }
             
@@ -1428,7 +1428,7 @@
                     });
                     
                     await tx.wait();
-                    showSuccess(`Successfully bought GDOG314! TX: ${tx.hash.substring(0,10)}...`);
+                    showSuccess(`Successfully bought GDOG! TX: ${tx.hash.substring(0,10)}...`);
                 } else {
                     contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
                     const tx = await contract.transfer(CONTRACT_ADDRESS, ethers.parseEther(fromAmount), {
@@ -1437,7 +1437,7 @@
                     });
                     
                     await tx.wait();
-                    showSuccess(`Successfully sold GDOG314! TX: ${tx.hash.substring(0,10)}...`);
+                    showSuccess(`Successfully sold GDOG! TX: ${tx.hash.substring(0,10)}...`);
                 }
                 
                 document.getElementById('fromAmount').value = '';
@@ -1449,7 +1449,7 @@
             } catch (error) {
                 showError('Swap failed: ' + error.message);
             } finally {
-                hideLoading('swapBtn', swapDirection === 'buy' ? 'Buy GDOG314' : 'Sell GDOG314');
+                hideLoading('swapBtn', swapDirection === 'buy' ? 'Buy GDOG' : 'Sell GDOG');
             }
         }
 
@@ -1662,3 +1662,4 @@
     </script>
 </body>
 </html>
+
